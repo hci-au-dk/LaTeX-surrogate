@@ -114,6 +114,29 @@ class HTTPSServer
             request.setHeader 'Cookie', @cookie
             request.end()
 
+        @server.post '/compile', (req, res) =>
+            # Check for the required arguments.
+            if not req.body? or not req.body.path? or not req.body.owner?
+                console.log "Required argument(s) missing."
+                res.send "Required argument(s) missing.", 400
+                return
+
+            # Check that the path exists in the cache.
+            cacheName = req.body.owner + req.body.path.split('/').join('+')
+            if not @fileCache.cacheExists cacheName
+                console.log 'Cache does not exist.'
+                res.send 'No such LaTeX project in cache.', 400
+                return
+
+            # Try to compile it!
+            # TODO: missing
+
+            # Return the compiled PDF...
+            #
+            #
+
+
+
         @server.listen(PORT)
 
     authenticate: ->
