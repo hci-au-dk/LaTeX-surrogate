@@ -68,35 +68,45 @@ class HTTPSServer
                     data += chunk
                 res2.on 'end', () =>
                     dirListing = JSON.parse data
-                    for item in dirListing
-                        # Fetch all files - TODO: we ignore directories right now.
-                        if not item['is_dir']
-                            # Fetch this file.
-                            console.log 'Fetching file ' + item.path
-                            options = {
-                                host: req.body.host,
-                                port: req.body.port,
-                                path: '/store/' + req.body.owner + '/' + item.path,
-                                method: 'GET'
-                            }
-                            request = http.request options, (res3) =>
-                                if res3.statusCode != 200
-                                    console.log 'Error fetching file ' + item.path
-                                data = ''
-                                res3.on 'data', (chunk) ->
-                                    data += chunk
-                                res3.on 'end', () =>
-                                    if not @fileCache.writeFile cacheName, item.path.split('/')[-1..-1][0], data
-                                        console.log 'Error writing file to cache ' + item.path
-                                    else #DEBUG
-                                        console.log 'Successfully fetched ' + item.path #DEBUG
-                            request.on 'error', (err) ->
-                                console.log 'Error while fetching file.', err
-                            request.setHeader 'Cookie', @cookie
-                            request.end()
 
+                    fetchFiles = (files, callback) =>
+                        item = files[0]
+                        if item['is_dir']
+                            callback files[1...]
+                            return
+                        console.log 'Fetching file ' + files[0].path
+                        options = {
+                            host: req.body.host,
+                            port: req.body.port,
+                            path: '/store/' + req.body.owner + '/' + item.path,
+                            method: 'GET'
+                        }
+                        request = http.request options, (res3) =>
+                            if res3.statusCode != 200
+                                console.log 'Error fetching file ' + item.path
+                            data = ''
+                            res3.on 'data', (chunk) ->
+                                data += chunk
+                            res3.on 'end', () =>
+                                if not @fileCache.writeFile cacheName, item.path.split('/')[-1..-1][0], data
+                                    console.log 'Error writing file to cache ' + item.path.split('/')[-1..-1][0]
+                                    res.send 'Error while ftching files.', 500
+                                else
+                                    console.log 'Successfully fetched ' + item.path #DEBUG
+                                    remainingFiles = files[1...]
+                                    if remainingFiles.length > 0
+                                        callback remainingFiles, callback
+                                    else
+                                        res.send 'Successfully fetched all files.'
+                        request.on 'error', (err) ->
+                            console.log 'Error while fetching file.', err
+                            res.send 'Error fetching files.', 500
+                        request.setHeader 'Cookie', @cookie
+                        request.end()
 
-                    res.send 'w00t!' #DEBUG
+                    fetchFiles dirListing, fetchFiles
+
+                    #res.send 'w00t!' #DEBUG
             request.on 'error', (err) ->
                 console.log "Error requesting directory listing."
                 res.send "Error requesting directory listing.", 500
