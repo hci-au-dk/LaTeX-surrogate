@@ -10,7 +10,7 @@ class FileCache
             if err
                 if err.errno == 34
                     # The directory does not exist.
-                    fs.mkdir ROOT, 0750, (err) ->
+                    fs.mkdir ROOT, 0o0750, (err) ->
                         if err
                             console.log "Error creating root directory for the file cache."
                             process.exit 1
@@ -38,7 +38,7 @@ class FileCache
 
         # Create the directory
         try
-            fs.mkdirSync ROOT + '/' + name, 0750
+            fs.mkdirSync ROOT + '/' + name, 0o0750
         catch error
             console.log 'Error creating cache directory ' + name
             return false
@@ -59,6 +59,7 @@ class FileCache
 
         try
             fs.writeFile ROOT + '/' + cacheName + '/' + fileName, fileData
+            return true
         catch error
             console.log "Error writing file " + fileName + " into cache " + cacheName
             console.log error
