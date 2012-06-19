@@ -2,6 +2,7 @@ express = require 'express'
 fs = require 'fs'
 http = require 'http'
 filecache = require './filecache'
+latex = require './latex'
 
 # "Defines"
 PORT = 8002
@@ -129,13 +130,51 @@ class HTTPSServer
                 return
 
             # Try to compile it!
-            # TODO: missing
+            latex.compile @fileCache.cachePath(cacheName), (error, doc) =>
+                res.header 'Content-Type', 'application/json'
 
-            # Return the compiled PDF...
-            #
-            #
+                # Return the data from stderr and stdout if an error has occurred.
+                if error
+                    returnValue = JSON.stringify {
+                        success:false,
+                        stderr:doc[0],
+                        stdout:doc[1]
+                    }
+                    res.send returnValue, 500
+                    console.log error
+                    return
 
+                # The document has been compiled - upload it to the file server.
+                try
+                    pdfData = fs.readFileSync(doc, 'binary')
+                catch error
+                    res.send JSON.stringify { success:false, message:'Error reading output file from cache.' }, 500
+                    return
 
+                options = {
+                    host: storageServer.host,
+                    port: storageServer.port,
+                    path: '/' + doc.replace('filecache', 'store').replace('+','/'),
+                    method: 'PUT'
+                }
+                request = http.request options, (res2) ->
+                    if res2.statusCode != 200
+                        console.log 'Error uploading file, status != 200 ' + options.path
+                        res.send JSON.stringify { success:false, message:'Error uploading file.' }, 500
+                    else
+                        res.send JSON.stringify { success:true, path:options.path }
+
+                    data = ''
+                    res2.on 'data', (chunk) -> #DEBUG
+                        data += chunk #DEBUG
+
+                request.on 'error', (err) ->
+                    console.log 'Error while uploading file.', err
+                    res.send JSON.stringify { success:false, message:'Error uploading file.' }, 500
+                request.setHeader 'Cookie', @cookie
+                request.setHeader 'Content-Type', 'application/octet-stream'
+                request.write pdfData, 'binary'
+                request.end()
 
         @server.listen(PORT)
 

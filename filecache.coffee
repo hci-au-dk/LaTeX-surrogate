@@ -19,6 +19,9 @@ class FileCache
                     console.log err
                     process.exit 1
 
+    cachePath: (name) ->
+        return ROOT + '/' + name
+
     cacheExists: (name) ->
         try
             stats = fs.statSync ROOT + '/' + name
