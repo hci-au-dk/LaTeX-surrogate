@@ -146,7 +146,7 @@ class HTTPSServer
 
                 # The document has been compiled - upload it to the file server.
                 try
-                    pdfData = fs.readFileSync(doc, 'binary')
+                    pdfData = new Buffer(fs.readFileSync(doc, 'binary'), 'binary')
                 catch error
                     res.send JSON.stringify { success:false, message:'Error reading output file from cache.' }, 500
                     return
@@ -165,8 +165,6 @@ class HTTPSServer
                         res.send JSON.stringify { success:true, path:options.path }
 
                     data = ''
-                    res2.on 'data', (chunk) -> #DEBUG
-                        data += chunk #DEBUG
 
                 request.on 'error', (err) ->
                     console.log 'Error while uploading file.', err
