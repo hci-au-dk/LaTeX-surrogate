@@ -106,7 +106,6 @@ class ProjectRepo
             path: '/store/' + owner + path,
             method: 'GET'
         }
-        console.log options
         request = https.request options, (res) =>
             if res.statusCode != 200
                 console.log "Error requesting directory listing.", res.statusCode
@@ -119,12 +118,13 @@ class ProjectRepo
 
             res.on 'end', () =>
                 dirListing = JSON.parse data
+                metadata = {}
 
                 fetchFiles = (files, callback) =>
                     item = files[0]
                     if item['is_dir']
                         # TODO: for now we ignore directories
-                        callback files[1...]
+                        callback files[1...], callback
                         return
 
                     console.log 'Fetching file ' + files[0].path #DEBUG
@@ -151,11 +151,16 @@ class ProjectRepo
                                 cb 'Error while fetching files.', 500
                             else
                                 console.log 'Successfully fetched ' + item.path #DEBUG
+                                metadata[item.path] = item
                                 remainingFiles = files[1...]
                                 if remainingFiles.length > 0
                                     callback remainingFiles, callback
                                 else
+                                    if not @fileCache.writeFile cacheName, '.dbmetadata', JSON.stringify metadata
+                                        console.log 'Error writing DropBox metadata.'
+
                                     cb 'Successfully fetched all files.', 200
+
                     request.on 'error', (err) ->
                         console.log 'Error while fetching file.', err
                         cb 'Error fetching files.', 500
@@ -193,6 +198,108 @@ class ProjectRepo
             console.log 'Error writing repo file.'
             console.log error
         cb 'Successfully removed cache entry.', 200
+
+
+    updateRepo: (owner, path, cb) ->
+        # Update the contents of the cache.
+        # Check that the path exists in the cache.
+        cacheName = owner + path.split('/').join('+')
+        if not @fileCache.cacheExists cacheName
+            console.log 'Cache does not exist.'
+            cb 'No such LaTeX project in cache.', 400
+            return
+
+        # Try to fetch the directory listing.
+        options = {
+            host: @config.storeHost,
+            port: @config.storePort,
+            path: '/store/' + owner + path,
+            method: 'GET'
+        }
+        request = https.request options, (res) =>
+            if res.statusCode != 200
+                console.log "Error requesting directory listing.", res.statusCode
+                cb "Error requesting directory listing. Server returned code=." + res.statusCode, 500
+                return
+
+            data = ''
+            res.on 'data', (chunk) ->
+                data += chunk
+
+            res.on 'end', () =>
+                dirListing = JSON.parse data
+                metadata = JSON.parse(fs.readFileSync(@fileCache.cachePath(cacheName) + '/.dbmetadata'))
+
+                updateFiles = (files, callback) =>
+                    item = files[0]
+                    if item['is_dir']
+                        # TODO: for now we ignore subdirectories.
+                        callback files[1...], callback
+                        return
+
+                    # Check whether this file should be updated.
+                    if item.revision > metadata[item.path].revision
+                        console.log 'This file should be updated: ' + item.path #DEBUG
+                        console.log 'Fetching file ' + files[0].path #DEBUG
+                        options = {
+                            host: @config.storeHost,
+                            port: @config.storePort,
+                            path: '/store/' + owner + '/' + item.path,
+                            method: 'GET'
+                        }
+                        request = https.request options, (res) =>
+                            if res.statusCode != 200
+                                console.log 'Error fetching file ' + item.path
+                                cb 'Error fetching file ' + item.path, 500
+                                return
+
+                            data = ''
+                            res.on 'data', (chunk) ->
+                                data += chunk
+
+                            res.on 'end', () =>
+                                # Write the fetched file to the cache
+                                if not @fileCache.writeFile cacheName, item.path.split('/')[-1..-1][0], data
+                                    console.log 'Error writing file to cache ' + item.path.split('/')[-1..-1][0]
+                                    cb 'Error while fetching files.', 500
+                                else
+                                    console.log 'Successfully fetched ' + item.path #DEBUG
+                                    metadata[item.path] = item
+                                    remainingFiles = files[1...]
+                                    if remainingFiles.length > 0
+                                        callback remainingFiles, callback
+                                    else
+                                        if not @fileCache.writeFile cacheName, '.dbmetadata', JSON.stringify metadata
+                                            console.log 'Error writing DropBox metadata.'
+
+                                        cb 'Successfully fetched all files.', 200
+
+                        request.on 'error', (err) ->
+                            console.log 'Error while fetching file.', err
+                            cb 'Error fetching files.', 500
+                        request.setHeader 'Cookie', @cookie
+                        request.end()
+
+                    else
+                        console.log item.path + ' is already up-to-date.' #DEBUG
+
+                        remainingFiles = files[1...]
+                        if remainingFiles.length > 0
+                            callback remainingFiles, callback
+                        else
+                            if not @fileCache.writeFile cacheName, '.dbmetadata', JSON.stringify metadata
+                                console.log 'Error writing DropBox metadata.'
+                            cb 'Successfully updated all files.', 200
+
+                updateFiles dirListing, updateFiles
+
+
+        request.on 'error', (err) ->
+            console.log "Error requesting directory listing."
+            cb "Error requesting directory listing.", 500
+        request.setHeader 'Cookie', @cookie
+        request.end()
+
 
 
     compile: (owner, path, cb) ->

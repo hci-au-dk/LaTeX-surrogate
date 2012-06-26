@@ -60,6 +60,17 @@ class HTTPSServer
                 res.send msg, statusCode
 
 
+        @server.post '/update', (req, res) =>
+            # Check for the required arguments.
+            if not req.body? or not req.body.path? or not req.body.owner?
+                console.log "Required argument(s) missing."
+                res.send "Required argument(s) missing.", 400
+                return
+
+            @repos.updateRepo req.body.owner, req.body.path, (msg, statusCode) ->
+                res.send msg, statusCode
+
+
         @server.post '/compile', (req, res) =>
             # Check for the required arguments.
             if not req.body? or not req.body.path? or not req.body.owner?
