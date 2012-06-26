@@ -26,12 +26,14 @@ class ProjectRepo
 
         # Authenticate at the store server.
         @cookie = null
-        @authenticate @config.storeHost, @config.storePort
+        @authenticate @config.storeHost, @config.storePort, @config.storeUsername, @config.storePassword
 
         # Register a timed event for cleanup.
         setInterval @cleanRepos, 10 * 60 * 1000
+        setInterval @authenticate, 60 * 60 * 1000, @config.storeHost, @config.storePort, @config.storeUsername, @config.storePassword
 
-    authenticate: (host, port) ->
+    authenticate: (host, port, username, password) ->
+        console.log host, port, username, password #DEBUG
         # This method authenticates the LaTeX surrogate at the storage server.
         options = {
             host: host,
@@ -54,7 +56,7 @@ class ProjectRepo
             @cookie = null
 
         request.setHeader 'Content-Type', 'application/json'
-        request.write JSON.stringify {username: @config.storeUsername, password: @config.storePassword}
+        request.write JSON.stringify {username: username, password: password}
         request.end()
 
     cleanRepos: () ->
