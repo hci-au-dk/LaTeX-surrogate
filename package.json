@@ -2,6 +2,7 @@
 	"name" : "LaTeXSurrogate",
 	"version" : "0.1.0",
 	"dependencies" : {
-		"express" : "2.5.9"
+		"express" : "2.5.9",
+		"rimraf" : "2.0.2"
 	}
 }

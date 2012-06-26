@@ -1,4 +1,5 @@
 fs = require 'fs'
+rimraf = require 'rimraf'
 
 # Defines
 ROOT = 'filecache'
@@ -50,9 +51,13 @@ class FileCache
 
     removeCache: (name) ->
         # Remove a named cache from the file cache.
-        # TODO: missing
-        console.log "missing"
-        return false
+        try
+            rimraf.sync ROOT + '/' + name
+        catch error
+            console.log 'Error deleting cache dir.'
+            console.log error #DEBUG
+            return false
+        return true
 
     writeFile: (cacheName, fileName, fileData) ->
         # Write a single file to the cache. The cache is oblivious to the fact that it may be overwriting an old file.

@@ -171,6 +171,30 @@ class ProjectRepo
         request.setHeader 'Cookie', @cookie
         request.end()
 
+    deleteRepo: (owner, path, cb) ->
+        # Check that the path exists in the cache.
+        cacheName = owner + path.split('/').join('+')
+        if not @fileCache.cacheExists cacheName
+            console.log 'Cache does not exist.'
+            cb 'No such LaTeX project in cache.', 400
+            return
+
+        # Try to remove the directory in the file cache.
+        if not @fileCache.removeCache cacheName
+            cb 'Error removing cache entry.', 500
+            return
+
+        # Remove the entry from @repositories
+        delete @repositories[owner+path]
+        # And write the new information to disk.
+        try
+            fs.writeFileSync REPOFILE, JSON.stringify @repositories
+        catch error
+            console.log 'Error writing repo file.'
+            console.log error
+        cb 'Successfully removed cache entry.', 200
+
+
     compile: (owner, path, cb) ->
         # Check that the path exists in the cache.
         cacheName = owner + path.split('/').join('+')
