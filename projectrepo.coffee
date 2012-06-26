@@ -16,7 +16,7 @@ class ProjectRepo
 
         # Load the repo from file - if it exists.
         try
-            @repositories = JSON.parse fs.readFilesync(REPOFILE)
+            @repositories = JSON.parse fs.readFileSync(REPOFILE)
         catch error
             console.log 'Error loading repository info from file. Starting with an empty repo.'
             @repositories = {}
@@ -73,6 +73,13 @@ class ProjectRepo
         for key in delete_these
             delete @repositories[key]
 
+        # And write the new information to disk.
+        try
+            fs.writeFileSync REPOFILE, JSON.stringify @repositories
+        catch error
+            console.log 'Error writing repo file.'
+            console.log error
+
     createRepo: (host, port, owner, path, cb) ->
         # Create a filecache entry for the repo.
         # Create a cache path for the checkout.
@@ -83,6 +90,11 @@ class ProjectRepo
 
         # The filecache has been created - we thus need to register the repo.
         @repositories[owner+path] = { cacheName: cacheName, timestamp : new Date() }
+        try
+            fs.writeFileSync REPOFILE, JSON.stringify @repositories
+        catch error
+            console.log 'Error writing repo file.'
+            console.log error
 
         # Check out the repo contents from the url.
         # Try to fetch the directory listing.
@@ -164,6 +176,19 @@ class ProjectRepo
             console.log 'Cache does not exist.'
             cb 'No such LaTeX project in cache.', 400
             return
+
+        # Update the timestamp to show that we have had some activity.
+        if @repositories[owner+path]?
+            @repositories[owner+path].timestamp = new Date()
+        else
+            cacheName = owner + path.split('/').join('+')
+            @repositories[owner+path] = { cacheName: cacheName, timestamp : new Date() }
+        # Persist these changes.
+        try
+            fs.writeFileSync REPOFILE, JSON.stringify @repositories
+        catch error
+            console.log 'Error writing repo file.'
+            console.log error
 
         # Try to compile it!
         latex.compile @fileCache.cachePath(cacheName), (error, doc) =>
