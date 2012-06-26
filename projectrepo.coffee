@@ -228,7 +228,14 @@ class ProjectRepo
 
             res.on 'end', () =>
                 dirListing = JSON.parse data
-                metadata = JSON.parse(fs.readFileSync(@fileCache.cachePath(cacheName) + '/.dbmetadata'))
+                haveMetadata = false
+                metadata = {}
+                try
+                    metadata = JSON.parse(fs.readFileSync(@fileCache.cachePath(cacheName) + '/.dbmetadata'))
+                    haveMetadata = true
+                catch error
+                    console.log 'Error reading metadata from the cache.'
+                    console.log error
 
                 updateFiles = (files, callback) =>
                     item = files[0]
@@ -238,7 +245,7 @@ class ProjectRepo
                         return
 
                     # Check whether this file should be updated.
-                    if item.revision > metadata[item.path].revision
+                    if haveMetadata == false or item.revision > metadata[item.path].revision
                         console.log 'This file should be updated: ' + item.path #DEBUG
                         console.log 'Fetching file ' + files[0].path #DEBUG
                         options = {
