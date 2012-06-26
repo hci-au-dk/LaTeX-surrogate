@@ -1,8 +1,6 @@
 express = require 'express'
 fs = require 'fs'
 https = require 'https'
-#filecache = require './filecache'
-latex = require './latex'
 projectrepo = require './projectrepo'
 
 # "Defines"
