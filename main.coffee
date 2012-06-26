@@ -1,6 +1,6 @@
 express = require 'express'
 fs = require 'fs'
-http = require 'http'
+https = require 'https'
 filecache = require './filecache'
 latex = require './latex'
 
@@ -20,13 +20,21 @@ class HTTPSServer
 
         # Set options for https
         if @config.keyFile? and @config.certFile?
+            console.log "Starting in HTTPS mode."
             options = {
                 key : fs.readFileSync(@config.keyFile),
                 cert : fs.readFileSync(@config.certFile)
             }
             @server = express.createServer(options)
         else
+            console.log "Starting in HTTP mode."
             @server = express.createServer()
+
+        @server.use (req, res, next) ->
+            res.header 'Access-Control-Allow-Origin', 'http://localhost:8000'
+            res.header 'Access-Control-Allow-Credentials', 'true'
+            res.header 'Access-Control-Allow-Headers', 'Content-Type'
+            next()
 
         @server.use(express.bodyParser())
 
@@ -59,7 +67,7 @@ class HTTPSServer
                 path: '/store/' + req.body.owner + req.body.path,
                 method: 'GET'
             }
-            request = http.request options, (res2) =>
+            request = https.request options, (res2) =>
                 if res2.statusCode != 200
                     console.log "Error requesting directory listing.", res2.statusCode
                     res.send "Error requesting directory listing." + res2.statusCode, 500
@@ -82,7 +90,7 @@ class HTTPSServer
                             path: '/store/' + req.body.owner + '/' + item.path,
                             method: 'GET'
                         }
-                        request = http.request options, (res3) =>
+                        request = https.request options, (res3) =>
                             if res3.statusCode != 200
                                 console.log 'Error fetching file ' + item.path
                             data = ''
@@ -91,7 +99,7 @@ class HTTPSServer
                             res3.on 'end', () =>
                                 if not @fileCache.writeFile cacheName, item.path.split('/')[-1..-1][0], data
                                     console.log 'Error writing file to cache ' + item.path.split('/')[-1..-1][0]
-                                    res.send 'Error while ftching files.', 500
+                                    res.send 'Error while fetching files.', 500
                                 else
                                     console.log 'Successfully fetched ' + item.path #DEBUG
                                     remainingFiles = files[1...]
@@ -157,7 +165,7 @@ class HTTPSServer
                     path: '/' + doc.replace('filecache', 'store').replace('+','/'),
                     method: 'PUT'
                 }
-                request = http.request options, (res2) ->
+                request = https.request options, (res2) ->
                     if res2.statusCode != 200
                         console.log 'Error uploading file, status != 200 ' + options.path
                         res.send JSON.stringify { success:false, message:'Error uploading file.' }, 500
@@ -184,7 +192,7 @@ class HTTPSServer
             path: '/authenticate',
             method: 'POST'
         }
-        request = http.request options, (res) =>
+        request = https.request options, (res) =>
             if res.statusCode != 200
                 console.log 'Error logging in to storage server.', res.statusCode
                 @cookie = null
