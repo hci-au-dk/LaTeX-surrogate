@@ -1,4 +1,6 @@
 {
+  "storeHost" : "localhost",
+  "storePort" : 8001,
   "storeUsername" : "madsdk",
   "storePassword" : "secret",
   "keyFile" : "ssl/server.key",
