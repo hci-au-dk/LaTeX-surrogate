@@ -1,4 +1,6 @@
 {
   "storeUsername" : "madsdk",
-  "storePassword" : "secret"
+  "storePassword" : "secret",
+  "keyFile" : "ssl/server.key",
+  "certFile" : "ssl/server.crt"
 }
