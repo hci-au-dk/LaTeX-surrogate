@@ -82,7 +82,7 @@ class ProjectRepo
             console.log 'Error writing repo file.'
             console.log error
 
-    createRepo: (host, port, owner, path, cb) ->
+    createRepo: (owner, path, cb) ->
         # Create a filecache entry for the repo.
         # Create a cache path for the checkout.
         cacheName = owner + path.split('/').join('+')
@@ -101,8 +101,8 @@ class ProjectRepo
         # Check out the repo contents from the url.
         # Try to fetch the directory listing.
         options = {
-            host: host,
-            port: port,
+            host: @config.storeHost,
+            port: @config.storePort,
             path: '/store/' + owner + path,
             method: 'GET'
         }
@@ -129,8 +129,8 @@ class ProjectRepo
 
                     console.log 'Fetching file ' + files[0].path #DEBUG
                     options = {
-                        host: host,
-                        port: port,
+                        host: @config.storeHost,
+                        port: @config.storePort,
                         path: '/store/' + owner + '/' + item.path,
                         method: 'GET'
                     }
