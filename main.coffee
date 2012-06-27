@@ -33,6 +33,9 @@ class HTTPSServer
             next()
         @server.use(express.bodyParser())
 
+        @server.get '/ping', (req, res) =>
+            res.send "pong"
+
         # Ask the surrogate for its store username.
         @server.get '/storeUsername', (req, res) =>
             res.send @config.storeUsername
