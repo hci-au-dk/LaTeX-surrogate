@@ -87,7 +87,7 @@ class ProjectRepo
         # Create a cache path for the checkout.
         cacheName = owner + path.split('/').join('+')
         if not @fileCache.createCache cacheName
-            cb 'Error creating cache dir', 500
+            cb JSON.stringify({ success:false, msg: 'Error creating cache dir' }), 500
             return
 
         # The filecache has been created - we thus need to register the repo.
@@ -109,7 +109,7 @@ class ProjectRepo
         request = https.request options, (res) =>
             if res.statusCode != 200
                 console.log "Error requesting directory listing.", res.statusCode
-                cb "Error requesting directory listing. Server returned code=." + res.statusCode, 500
+                cb JSON.stringify({ success:false, msg:'Error requesting directory listing. Server returned code=.' + res.statusCode }), 500
                 return
 
             data = ''
@@ -137,7 +137,7 @@ class ProjectRepo
                     request = https.request options, (res) =>
                         if res.statusCode != 200
                             console.log 'Error fetching file ' + item.path
-                            cb 'Error fetching file ' + item.path, 500
+                            cb JSON.stringify({ success:false, msg:'Error fetching file ' + item.path }), 500
                             return
 
                         data = ''
@@ -148,7 +148,7 @@ class ProjectRepo
                             # Write the fetched file to the cache
                             if not @fileCache.writeFile cacheName, item.path.split('/')[-1..-1][0], data
                                 console.log 'Error writing file to cache ' + item.path.split('/')[-1..-1][0]
-                                cb 'Error while fetching files.', 500
+                                cb JSON.stringify({ success:false, msg:'Error while fetching files.' }), 500
                             else
                                 console.log 'Successfully fetched ' + item.path #DEBUG
                                 metadata[item.path] = item
@@ -159,20 +159,19 @@ class ProjectRepo
                                     if not @fileCache.writeFile cacheName, '.dbmetadata', JSON.stringify metadata
                                         console.log 'Error writing DropBox metadata.'
 
-                                    cb 'Successfully fetched all files.', 200
+                                    cb JSON.stringify({ success:true }), 200
 
                     request.on 'error', (err) ->
                         console.log 'Error while fetching file.', err
-                        cb 'Error fetching files.', 500
+                        cb JSON.stringify({ success:false, msg:'Error fetching files.' }), 500
                     request.setHeader 'Cookie', @cookie
                     request.end()
 
                 fetchFiles dirListing, fetchFiles
 
-                #cb 'w00t!' #DEBUG
         request.on 'error', (err) ->
             console.log "Error requesting directory listing."
-            cb "Error requesting directory listing.", 500
+            cb JSON.stringify({ success:false, msg:'Error requesting directory listing.' }), 500
         request.setHeader 'Cookie', @cookie
         request.end()
 
@@ -181,12 +180,12 @@ class ProjectRepo
         cacheName = owner + path.split('/').join('+')
         if not @fileCache.cacheExists cacheName
             console.log 'Cache does not exist.'
-            cb 'No such LaTeX project in cache.', 400
+            cb JSON.stringify({ success:false, msg:'No such LaTeX project in cache.' }), 400
             return
 
         # Try to remove the directory in the file cache.
         if not @fileCache.removeCache cacheName
-            cb 'Error removing cache entry.', 500
+            cb JSON.stringify({ success:false, msg:'Error removing cache entry.' }), 500
             return
 
         # Remove the entry from @repositories
@@ -197,7 +196,7 @@ class ProjectRepo
         catch error
             console.log 'Error writing repo file.'
             console.log error
-        cb 'Successfully removed cache entry.', 200
+        cb JSON.stringify({ success:true }), 200
 
 
     updateRepo: (owner, path, cb) ->
@@ -206,7 +205,7 @@ class ProjectRepo
         cacheName = owner + path.split('/').join('+')
         if not @fileCache.cacheExists cacheName
             console.log 'Cache does not exist.'
-            cb 'No such LaTeX project in cache.', 400
+            cb JSON.stringify({ success:false, msg:'No such LaTeX project in cache.' }), 400
             return
 
         # Try to fetch the directory listing.
@@ -219,7 +218,7 @@ class ProjectRepo
         request = https.request options, (res) =>
             if res.statusCode != 200
                 console.log "Error requesting directory listing.", res.statusCode
-                cb "Error requesting directory listing. Server returned code=." + res.statusCode, 500
+                cb JSON.stringify({ success:false, msg:'Error requesting directory listing. Server returned code=.' + res.statusCode }), 500
                 return
 
             data = ''
@@ -257,7 +256,7 @@ class ProjectRepo
                         request = https.request options, (res) =>
                             if res.statusCode != 200
                                 console.log 'Error fetching file ' + item.path
-                                cb 'Error fetching file ' + item.path, 500
+                                cb JSON.stringify({ success:false, msg:'Error fetching file ' + item.path }), 500
                                 return
 
                             data = ''
@@ -268,7 +267,7 @@ class ProjectRepo
                                 # Write the fetched file to the cache
                                 if not @fileCache.writeFile cacheName, item.path.split('/')[-1..-1][0], data
                                     console.log 'Error writing file to cache ' + item.path.split('/')[-1..-1][0]
-                                    cb 'Error while fetching files.', 500
+                                    cb JSON.stringify({ success:false, msg:'Error while fetching files.' }), 500
                                 else
                                     console.log 'Successfully fetched ' + item.path #DEBUG
                                     metadata[item.path] = item
@@ -279,11 +278,11 @@ class ProjectRepo
                                         if not @fileCache.writeFile cacheName, '.dbmetadata', JSON.stringify metadata
                                             console.log 'Error writing DropBox metadata.'
 
-                                        cb 'Successfully fetched all files.', 200
+                                        cb JSON.stringify({ success:true }), 200
 
                         request.on 'error', (err) ->
                             console.log 'Error while fetching file.', err
-                            cb 'Error fetching files.', 500
+                            cb JSON.stringify({ success:false, msg:'Error fetching files.' }), 500
                         request.setHeader 'Cookie', @cookie
                         request.end()
 
@@ -296,14 +295,14 @@ class ProjectRepo
                         else
                             if not @fileCache.writeFile cacheName, '.dbmetadata', JSON.stringify metadata
                                 console.log 'Error writing DropBox metadata.'
-                            cb 'Successfully updated all files.', 200
+                            cb JSON.stringify({ success:true }), 200
 
                 updateFiles dirListing, updateFiles
 
 
         request.on 'error', (err) ->
             console.log "Error requesting directory listing."
-            cb "Error requesting directory listing.", 500
+            cb JSON.stringify({ success:false, msg:'Error requesting directory listing.' }), 500
         request.setHeader 'Cookie', @cookie
         request.end()
 
@@ -314,7 +313,7 @@ class ProjectRepo
         cacheName = owner + path.split('/').join('+')
         if not @fileCache.cacheExists cacheName
             console.log 'Cache does not exist.'
-            cb 'No such LaTeX project in cache.', 400
+            cb JSON.stringify({ success:false, msg:'No such LaTeX project in cache.' }), 400
             return
 
         # Update the timestamp to show that we have had some activity.
@@ -336,10 +335,11 @@ class ProjectRepo
             if error
                 returnValue = JSON.stringify {
                     success:false,
+                    msg:'LaTeX compile error.',
                     stderr:doc[0],
                     stdout:doc[1]
                 }
-                cb returnValue, 500
+                cb returnValue, 200
                 console.log error
                 return
 

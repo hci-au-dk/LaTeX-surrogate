@@ -44,10 +44,12 @@ class HTTPSServer
             # Check for the required arguments.
             if not req.body? or not req.body.path? or not req.body.owner?
                 console.log "Required argument(s) missing."
-                res.send "Required argument(s) missing.", 400
+                res.header 'Content-Type', 'application/json'
+                res.send JSON.stringify({ success:false, msg:'Required argument(s) missing.' }), 400
                 return
 
             @repos.createRepo req.body.owner, req.body.path, (msg, statusCode) ->
+                res.header 'Content-Type', 'application/json'
                 res.send msg, statusCode
 
 
@@ -55,10 +57,12 @@ class HTTPSServer
             # Check for the required arguments.
             if not req.body? or not req.body.path? or not req.body.owner?
                 console.log "Required argument(s) missing."
-                res.send "Required argument(s) missing.", 400
+                res.header 'Content-Type', 'application/json'
+                res.send JSON.stringify({ success:false, msg:'Required argument(s) missing.' }), 400
                 return
 
             @repos.deleteRepo req.body.owner, req.body.path, (msg, statusCode) ->
+                res.header 'Content-Type', 'application/json'
                 res.send msg, statusCode
 
 
@@ -66,10 +70,12 @@ class HTTPSServer
             # Check for the required arguments.
             if not req.body? or not req.body.path? or not req.body.owner?
                 console.log "Required argument(s) missing."
-                res.send "Required argument(s) missing.", 400
+                res.header 'Content-Type', 'application/json'
+                res.send JSON.stringify({ success:false, msg:'Required argument(s) missing.' }), 400
                 return
 
             @repos.updateRepo req.body.owner, req.body.path, (msg, statusCode) ->
+                res.header 'Content-Type', 'application/json'
                 res.send msg, statusCode
 
 
@@ -77,7 +83,7 @@ class HTTPSServer
             # Check for the required arguments.
             if not req.body? or not req.body.path? or not req.body.owner?
                 console.log "Required argument(s) missing."
-                res.send "Required argument(s) missing.", 400
+                res.send JSON.stringify({ success:false, msg:'Required argument(s) missing.' }), 400
                 return
 
             @repos.compile req.body.owner, req.body.path, (data, statusCode) ->
