@@ -26,12 +26,6 @@ class HTTPSServer
             console.log "Starting in HTTP mode."
             @server = express.createServer()
 
-        @server.use (req, res, next) ->
-            res.header 'Access-Control-Allow-Origin', 'http://localhost:8000'
-            res.header 'Access-Control-Allow-Credentials', 'true'
-            res.header 'Access-Control-Allow-Headers', 'Content-Type'
-            next()
-
         @server.use(express.bodyParser())
 
         # Ask the surrogate for its store username.
